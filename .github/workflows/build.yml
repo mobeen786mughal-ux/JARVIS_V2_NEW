@@ -29,25 +29,15 @@ jobs:
           pip install pygame==2.6.1
           pip install python-dotenv==1.0.1
           pip install Pillow
+          pip install pyinstaller
 
-      - name: Setup Icons
+      - name: Build EXE with PyInstaller
         run: |
-          python -c "from PIL import Image, ImageDraw; img = Image.new('RGBA', (1024, 1024), (10, 14, 26, 255)); d = ImageDraw.Draw(img); d.ellipse([112, 112, 912, 912], fill='#0a0e1a', outline='#00d4ff', width=16); d.ellipse([320, 400, 460, 540], fill='#00d4ff'); d.ellipse([564, 400, 704, 540], fill='#00d4ff'); d.rectangle([400, 680, 624, 720], fill='#00d4ff'); d.line([512, 112, 512, 40], fill='#00d4ff', width=12); d.ellipse([492, 12, 532, 52], fill='#00d4ff'); img.save('assets/logo.png')" 
-        continue-on-error: true
-
-      - name: Build EXE
-        run: |
-          echo "Building EXE with Flet..."
-          flet build windows --verbose
-
-      - name: Find EXE
-        run: |
-          echo "Searching for EXE files..."
-          dir /s /b *.exe
+          pyinstaller --noconfirm --onefile --windowed --name "JARVIS_V2" --add-data "assets;assets" main.py
 
       - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
           name: JARVIS-V2-EXE
-          path: build/windows
+          path: dist/JARVIS_V2.exe
           if-no-files-found: error
