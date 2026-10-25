@@ -1,0 +1,54 @@
+name: Build JARVIS APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y portaudio19-dev python3-pyaudio libasound2-dev libsdl2-dev
+
+      - name: Setup Icons
+        run: |
+          pip install Pillow
+          if [ ! -d "assets" ]; then mkdir -p assets; fi
+          # Check karo ke logo.png mojood hai ya nahi
+          if [ ! -f "assets/logo.png" ]; then
+            echo "Logo nahi mila, default bana raha hoon..."
+            python -c "from PIL import Image, ImageDraw; img = Image.new('RGBA', (1024, 1024), (10, 14, 26, 255)); d = ImageDraw.Draw(img); d.ellipse([112, 112, 912, 912], fill='#0a0e1a', outline='#00d4ff', width=16); d.ellipse([320, 400, 460, 540], fill='#00d4ff'); d.ellipse([564, 400, 704, 540], fill='#00d4ff'); d.rectangle([400, 680, 624, 720], fill='#00d4ff'); d.line([512, 112, 512, 40], fill='#00d4ff', width=12); d.ellipse([492, 12, 532, 52], fill='#00d4ff'); img.save('assets/logo.png')"
+          fi
+          # Resize for Android icon
+          python -c "from PIL import Image; img = Image.open('assets/logo.png').convert('RGBA'); img = img.resize((1024, 1024), Image.LANCZOS); img.save('assets/logo.png')"
+          cp assets/logo.png assets/icon.png
+
+      - name: Build APK
+        id: build
+        uses: flet-dev/flet-build-action@v1
+        with:
+          target: 'apk'
+          build-version: '2.0.0'
+          build-number: '1'
+          arch: 'arm64-v8a'
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-APK
+          path: ${{ steps.build.outputs.archive-path }}
+          archive: false
+          if-no-files-found: error
