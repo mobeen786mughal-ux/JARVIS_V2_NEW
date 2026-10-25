@@ -1,4 +1,4 @@
-name: Build JARVIS APK
+name: Build Windows EXE
 
 on:
   push:
@@ -6,46 +6,48 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-apk:
-    runs-on: ubuntu-latest
+  build-exe:
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           
-      - name: Install System Dependencies
+      - name: Install Python dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y portaudio19-dev python3-pyaudio libasound2-dev libsdl2-dev
+          python -m pip install --upgrade pip
+          pip install flet==0.24.1
+          pip install groq==0.11.0
+          pip install SpeechRecognition==3.10.4
+          pip install pyttsx3==2.98
+          pip install gTTS==2.5.1
+          pip install pygame==2.6.1
+          pip install python-dotenv==1.0.1
+          pip install Pillow
 
       - name: Setup Icons
         run: |
-          pip install Pillow
-          if [ ! -d "assets" ]; then mkdir -p assets; fi
-          if [ ! -f "assets/logo.png" ]; then
-            echo "Logo nahi mila, default bana raha hoon..."
-            python -c "from PIL import Image, ImageDraw; img = Image.new('RGBA', (1024, 1024), (10, 14, 26, 255)); d = ImageDraw.Draw(img); d.ellipse([112, 112, 912, 912], fill='#0a0e1a', outline='#00d4ff', width=16); d.ellipse([320, 400, 460, 540], fill='#00d4ff'); d.ellipse([564, 400, 704, 540], fill='#00d4ff'); d.rectangle([400, 680, 624, 720], fill='#00d4ff'); d.line([512, 112, 512, 40], fill='#00d4ff', width=12); d.ellipse([492, 12, 532, 52], fill='#00d4ff'); img.save('assets/logo.png')"
-          fi
-          python -c "from PIL import Image; img = Image.open('assets/logo.png').convert('RGBA'); img = img.resize((1024, 1024), Image.LANCZOS); img.save('assets/logo.png')"
-          cp assets/logo.png assets/icon.png
+          python -c "from PIL import Image, ImageDraw; img = Image.new('RGBA', (1024, 1024), (10, 14, 26, 255)); d = ImageDraw.Draw(img); d.ellipse([112, 112, 912, 912], fill='#0a0e1a', outline='#00d4ff', width=16); d.ellipse([320, 400, 460, 540], fill='#00d4ff'); d.ellipse([564, 400, 704, 540], fill='#00d4ff'); d.rectangle([400, 680, 624, 720], fill='#00d4ff'); d.line([512, 112, 512, 40], fill='#00d4ff', width=12); d.ellipse([492, 12, 532, 52], fill='#00d4ff'); img.save('assets/logo.png')" 
+        continue-on-error: true
 
-      - name: Build APK
-        id: build
-        uses: flet-dev/flet-build-action@v1
-        with:
-          target: 'apk'
-          build-version: '2.0.0'
-          build-number: '1'
+      - name: Build EXE
+        run: |
+          echo "Building EXE with Flet..."
+          flet build windows --verbose
 
-      - name: Upload APK
+      - name: Find EXE
+        run: |
+          echo "Searching for EXE files..."
+          dir /s /b *.exe
+
+      - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
-          name: JARVIS-APK
-          path: ${{ steps.build.outputs.archive-path }}
-          archive: false
+          name: JARVIS-V2-EXE
+          path: build/windows
           if-no-files-found: error
